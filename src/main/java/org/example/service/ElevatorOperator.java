@@ -1,14 +1,14 @@
 package org.example.service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.example.model.Building;
 
 public class ElevatorOperator {
 
   private final int elevatorCapacity = 5;
-  private List<Integer> currentPassengers;
+  private List<Integer> currentPassengers = new ArrayList<>();
   private Building building;
 
   public ElevatorOperator(Building building) {
@@ -17,21 +17,27 @@ public class ElevatorOperator {
 
   public void start() {
     int iteration = 0;
-    fillElevator();
-    while (building.isPassengersWait()) {
-      if (getNumberOfRequiredFloor() > building.getCurrentFloor().getFloorNumber()) {
-        goUp();
-      } else if (getNumberOfRequiredFloor() < building.getCurrentFloor().getFloorNumber()) {
-        goDown();
-      } else if (getNumberOfRequiredFloor() == -1) {
+    //if 1 floor is empty start with 2
+    fillElevatorForFirstTime();
+    while (building.isPassengersInBuildingWait()) {
+      if (building.getCurrentFloor().getWaitingPassengers().isEmpty()
+          || getNumberOfRequiredFloor() > building.getCurrentFloor().getFloorNumber()) {
         goUp();
       } else {
-        throw new RuntimeException("something go wrong");
+        goDown();
       }
       iteration++;
       print(iteration);
     }
 
+  }
+
+  private void fillElevatorForFirstTime() {
+    if (!building.getCurrentFloor().getWaitingPassengers().isEmpty()) {
+      fillElevator(5);
+    } else {
+      goUp();
+    }
   }
 
   private void goDown() {
@@ -40,7 +46,9 @@ public class ElevatorOperator {
       building.getFloors().get(floorNumber - 1).setElevatorHere(true);
       building.getFloors().get(floorNumber).setElevatorHere(false);
       dropPassengers();
-      if (getNumberOfFreeSeats() != 0) {fillElevator();}
+      if (getNumberOfFreeSeats() != 0) {
+        fillElevator(getNumberOfFreeSeats());
+      }
     } else {
       throw new RuntimeException("it cannot go down");
     }
@@ -52,35 +60,39 @@ public class ElevatorOperator {
       building.getFloors().get(floorNumber + 1).setElevatorHere(true);
       building.getFloors().get(floorNumber).setElevatorHere(false);
       dropPassengers();
-      if (getNumberOfFreeSeats() != 0) {fillElevator();}
+      if (getNumberOfFreeSeats() != 0) {
+        fillElevator(getNumberOfFreeSeats());
+      }
     } else {
       throw new RuntimeException("it cannot go up");
     }
   }
 
   private void dropPassengers() {
-    int tmp = (int) currentPassengers
-        .stream()
-        .filter(integer -> integer == building.getCurrentFloor().getFloorNumber())
-        .count();
-    currentPassengers
-        .removeIf(passenger -> passenger == building.getCurrentFloor().getFloorNumber());
-    building.getCurrentFloor().addAmountOfEnteredPeople(tmp);
+    if (currentPassengers.isEmpty()) {
+      return;
+    }
+    List<Integer> deleteList = currentPassengers.stream()
+        .filter(passenger -> passenger == building.getCurrentFloor().getFloorNumber())
+        .collect(Collectors.toList());
+    building.getCurrentFloor().addAmountOfEnteredPeople(deleteList.size());
+    currentPassengers.removeAll(deleteList);
+    building.dropPassengers(deleteList);
   }
 
-  private void fillElevator() {
+  private void fillElevator(int limit) {
     List<Integer> waitingPassengers = building.getCurrentFloor().getWaitingPassengers();
-    if (waitingPassengers.size() > elevatorCapacity) {
-      currentPassengers = waitingPassengers.stream().limit(elevatorCapacity)
-          .collect(Collectors.toList());
+    if (waitingPassengers.isEmpty()) {
+      return;
     }
-    if (waitingPassengers.size() < elevatorCapacity && !waitingPassengers.isEmpty()) {
-      currentPassengers.addAll(waitingPassengers);
+    for (int i = 0; i < limit; i++) {
+      currentPassengers.add(waitingPassengers.get(i));
+      building.dropPassengers(waitingPassengers.get(i));
     }
   }
 
   private int getNumberOfRequiredFloor() {
-    return currentPassengers.stream().filter(Objects::nonNull).mapToInt(Integer::intValue).max().orElse(-1);
+    return currentPassengers.stream().mapToInt(Integer::intValue).max().orElse(-1);
   }
 
   private int getNumberOfFreeSeats() {
@@ -88,7 +100,7 @@ public class ElevatorOperator {
   }
 
   public void print(int iteration) {
-    System.out.println("Step " + iteration);
+    System.out.println("Step " + iteration + currentPassengers);
     building.printBuilding();
   }
 

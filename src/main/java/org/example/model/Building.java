@@ -21,11 +21,19 @@ public class Building {
         .orElseThrow(RuntimeException::new);
   }
 
+  public void dropPassengers(List<Integer> deleteList) {
+    getCurrentFloor().getWaitingPassengers().removeAll(deleteList);
+  }
+
+  public void dropPassengers(Integer delete) {
+    getCurrentFloor().getWaitingPassengers().remove(delete);
+  }
+
   public List<Floor> getFloors() {
     return floors;
   }
 
-  public boolean isPassengersWait() {
+  public boolean isPassengersInBuildingWait() {
     return !floors
         .stream()
         .allMatch(floor -> floor.getWaitingPassengers().isEmpty());
