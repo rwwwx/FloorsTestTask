@@ -25,10 +25,6 @@ public class Building {
     getCurrentFloor().getWaitingPassengers().removeAll(deleteList);
   }
 
-  public void dropPassengers(Integer delete) {
-    getCurrentFloor().getWaitingPassengers().remove(delete);
-  }
-
   public List<Floor> getFloors() {
     return floors;
   }
@@ -68,9 +64,9 @@ public class Building {
       int amountOfBuilding) {
     List<Integer> result = new ArrayList<>();
     for (int i = 0; i < amountOfPassengers; i++) {
-      int tmp = random.nextInt(amountOfBuilding + 1);
+      int tmp = random.nextInt(amountOfBuilding);
       while (tmp == numberOfFloor) {
-        tmp = random.nextInt(amountOfBuilding + 1);
+        tmp = random.nextInt(amountOfBuilding);
       }
       result.add(tmp);
     }

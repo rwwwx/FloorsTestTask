@@ -3,13 +3,15 @@ package org.example.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.example.exception.CannotGoDownException;
+import org.example.exception.CannotGoUpException;
 import org.example.model.Building;
 
 public class ElevatorOperator {
 
-  private final int elevatorCapacity = 5;
-  private List<Integer> currentPassengers = new ArrayList<>();
-  private Building building;
+  private static final int ELEVATOR_CAPACITY = 5;
+  private final List<Integer> currentPassengers = new ArrayList<>();
+  private final Building building;
 
   public ElevatorOperator(Building building) {
     this.building = building;
@@ -17,14 +19,14 @@ public class ElevatorOperator {
 
   public void start() {
     int iteration = 0;
-    //if 1 floor is empty start with 2
     fillElevatorForFirstTime();
     while (building.isPassengersInBuildingWait()) {
-      if (building.getCurrentFloor().getWaitingPassengers().isEmpty()
-          || getNumberOfRequiredFloor() > building.getCurrentFloor().getFloorNumber()) {
+      if (getNumberOfRequiredFloor() > building.getCurrentFloor().getFloorNumber()) {
         goUp();
-      } else {
+      } else if (getNumberOfRequiredFloor() < building.getCurrentFloor().getFloorNumber()){
         goDown();
+      } else {
+        throw new RuntimeException("something went wrong");
       }
       iteration++;
       print(iteration);
@@ -34,9 +36,11 @@ public class ElevatorOperator {
 
   private void fillElevatorForFirstTime() {
     if (!building.getCurrentFloor().getWaitingPassengers().isEmpty()) {
-      fillElevator(5);
+      fillElevator(building.getCurrentFloor().getWaitingPassengers().size());
     } else {
-      goUp();
+      while (currentPassengers.isEmpty()) {
+        goUp();
+      }
     }
   }
 
@@ -50,7 +54,7 @@ public class ElevatorOperator {
         fillElevator(getNumberOfFreeSeats());
       }
     } else {
-      throw new RuntimeException("it cannot go down");
+      throw new CannotGoDownException();
     }
   }
 
@@ -64,7 +68,7 @@ public class ElevatorOperator {
         fillElevator(getNumberOfFreeSeats());
       }
     } else {
-      throw new RuntimeException("it cannot go up");
+      throw new CannotGoUpException();
     }
   }
 
@@ -77,7 +81,6 @@ public class ElevatorOperator {
         .collect(Collectors.toList());
     building.getCurrentFloor().addAmountOfEnteredPeople(deleteList.size());
     currentPassengers.removeAll(deleteList);
-    building.dropPassengers(deleteList);
   }
 
   private void fillElevator(int limit) {
@@ -85,10 +88,15 @@ public class ElevatorOperator {
     if (waitingPassengers.isEmpty()) {
       return;
     }
+    if (waitingPassengers.size() < limit){
+      limit = waitingPassengers.size();
+    }
+    ArrayList<Integer> deleteList = new ArrayList<>();
     for (int i = 0; i < limit; i++) {
       currentPassengers.add(waitingPassengers.get(i));
-      building.dropPassengers(waitingPassengers.get(i));
+      deleteList.add(waitingPassengers.get(i));
     }
+    building.dropPassengers(deleteList);
   }
 
   private int getNumberOfRequiredFloor() {
@@ -96,7 +104,7 @@ public class ElevatorOperator {
   }
 
   private int getNumberOfFreeSeats() {
-    return 5 - currentPassengers.size();
+    return ELEVATOR_CAPACITY - currentPassengers.size();
   }
 
   public void print(int iteration) {
