@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 public class Building {
 
@@ -29,21 +28,14 @@ public class Building {
     return floors;
   }
 
-  public boolean isPassengersInBuildingWait() {
-    return !floors
-        .stream()
-        .allMatch(floor -> floor.getWaitingPassengers().isEmpty());
-  }
-
   public void printBuilding() {
-    floors.stream().sorted(Comparator.comparingInt(Floor::getFloorNumber).reversed())
-        .collect(Collectors.toList()).forEach(Floor::printFloor);
+    floors.stream().sorted(Comparator.comparingInt(Floor::getFloorNumber).reversed()).toList().forEach(Floor::printFloor);
   }
 
   public static Building initBuildingWithFloors() {
     Building building = new Building();
-    int amountOfFloors = random.nextInt(21 - 5) + 5; //random in bound from 5 to 20
-    building.floors = new ArrayList<>(amountOfFloors);
+    int amountOfFloors = random.nextInt(5,21);
+    building.floors = new ArrayList<>();
 
     for (int i = 0; i < amountOfFloors; i++) {
       List<Integer> passengers = generateListOfPassengers(i, random.nextInt(11), amountOfFloors);

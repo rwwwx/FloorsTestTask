@@ -2,7 +2,6 @@ package org.example.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.example.exception.CannotGoDownException;
 import org.example.exception.CannotGoUpException;
 import org.example.model.Building;
@@ -20,7 +19,9 @@ public class ElevatorOperator {
   public void start() {
     int iteration = 0;
     fillElevatorForFirstTime();
-    while (building.isPassengersInBuildingWait()) {
+    while (!currentPassengers.isEmpty()) {
+      iteration++;
+      print(iteration);
       if (getNumberOfRequiredFloor() > building.getCurrentFloor().getFloorNumber()) {
         goUp();
       } else if (getNumberOfRequiredFloor() < building.getCurrentFloor().getFloorNumber()){
@@ -28,19 +29,17 @@ public class ElevatorOperator {
       } else {
         throw new RuntimeException("something went wrong");
       }
-      iteration++;
-      print(iteration);
     }
-
+    print(iteration + 1);
   }
 
   private void fillElevatorForFirstTime() {
     if (!building.getCurrentFloor().getWaitingPassengers().isEmpty()) {
-      fillElevator(building.getCurrentFloor().getWaitingPassengers().size());
+      fillElevator(5);
     } else {
-      while (currentPassengers.isEmpty()) {
-        goUp();
-      }
+        while (currentPassengers.isEmpty()) {
+          goUp();
+        }
     }
   }
 
@@ -77,8 +76,7 @@ public class ElevatorOperator {
       return;
     }
     List<Integer> deleteList = currentPassengers.stream()
-        .filter(passenger -> passenger == building.getCurrentFloor().getFloorNumber())
-        .collect(Collectors.toList());
+        .filter(passenger -> passenger == building.getCurrentFloor().getFloorNumber()).toList();
     building.getCurrentFloor().addAmountOfEnteredPeople(deleteList.size());
     currentPassengers.removeAll(deleteList);
   }
@@ -108,7 +106,7 @@ public class ElevatorOperator {
   }
 
   public void print(int iteration) {
-    System.out.println("Step " + iteration + currentPassengers);
+    System.out.println("Step " + iteration + " current passengers " + currentPassengers);
     building.printBuilding();
   }
 
